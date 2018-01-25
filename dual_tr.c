@@ -23,20 +23,18 @@ int main(int Parm_Count, char *Parms[])
       cport_nr=0,        /* /dev/ttyS0 (COM1 on windows) /dev/ttyUSB0 are 16 */
       bdrate=9600,       /* 9600 baud */
       Format=1;
+  char devicedata[80];   /* data to send */
 
-   if (Parm_Count==2)  //if there are the right number of parameters on the command line
-   {
       for (j=1; j<Parm_Count; j++)  // for all wild search parameters
       {
          strcpy(Param_strings[j-1],Parms[j]);	// on each loop scan the current param
       }
       j=sscanf(Param_strings[0],"%i",&cport_nr); // search if the current param are valid
       if (j != 1) error=1;
-      j=sscanf(Param_strings[1],"%i",&Format); // search if the current param are valid
+      j=sscanf(Param_strings[1],"%s",&devicedata); // search if the current param are valid
       if (j != 1) error=1;
-      sprintf(message,"Devicecode=%s, Message=Baud=%li\r\n",devicename, bdrate); //output the received setup parameters
+      sprintf(message,"Devicecode=%i, Message=%s \r\n",cport_nr, devicedata); //output the received setup parameters
       fputs(message,output);
-   }  //end of if param_count==3
 
   unsigned char buf[2048];	// maximo lenght es 2 k en la docu lo dice
 
@@ -45,12 +43,23 @@ int main(int Parm_Count, char *Parms[])
 
   if(RS232_OpenComport(cport_nr, bdrate, mode))
   {
-    printf("Can not open comport\n");
+    printf("Can not open comport for send data\n");
 
     return(0);
   }
 
 
+    RS232_cputs(cport_nr, devicedata);
+
+    printf("sent: %s\n", devicedata);
+
+#ifdef _WIN32
+    Sleep(1000);
+#else
+    usleep(1000000);  /* sleep for 1 Second */
+#endif
+
+    printf("getting response  data\n");
 // esta parte es la que recibe, aun no la implemento.. debe alternarse por algun semaforo
   while(1)
   {
@@ -77,6 +86,8 @@ int main(int Parm_Count, char *Parms[])
     usleep(100000);  /* sleep for 100 milliSeconds */
 #endif
   }
+
+  RS232_CloseComport(cport_nr);
 
   return(0);
 }
